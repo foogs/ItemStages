@@ -6,9 +6,10 @@
 */
 apply from: 'gradle/property_helper.gradle'
 
-def gitRepo = project.ext.modSource ?: project.findProperty('gitRemote', getExecOutput(['git', 'remote', 'get-url', 'origin']))
-def gitCommit = System.getenv('GIT_COMMIT') ?: getExecOutput(['git', 'log', '-n', '1', '--pretty=tformat:%h' ])
-def gitPrevCommit = System.getenv('GIT_PREVIOUS_COMMIT')
+def hasGitRepo = project.rootProject.file('.git').exists()
+def gitRepo = project.ext.modSource ?: (hasGitRepo ? project.findProperty('gitRemote', getExecOutput(['git', 'remote', 'get-url', 'origin'])) : '')
+def gitCommit = hasGitRepo ? (System.getenv('GIT_COMMIT') ?: getExecOutput(['git', 'log', '-n', '1', '--pretty=tformat:%h' ])) : ''
+def gitPrevCommit = hasGitRepo ? System.getenv('GIT_PREVIOUS_COMMIT') : ''
 
 // If a full range is available use that range.
 if (gitCommit && gitPrevCommit) {

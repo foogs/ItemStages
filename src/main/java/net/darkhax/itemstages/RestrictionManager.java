@@ -1,5 +1,8 @@
 package net.darkhax.itemstages;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.annotation.Nullable;
 
 import com.google.common.collect.HashMultimap;
@@ -73,11 +76,50 @@ public class RestrictionManager extends ReloadListener<Void> {
         
         return this.getRestriction(player, stageData, stack, this.preventInventory);
     }
+
+    @Nullable
+    public Restriction getInventoryRestriction (PlayerEntity player, IStageData stageData, ItemStack stack, Set<String> missingStages) {
+
+        return this.getRestriction(player, stageData, stack, this.preventInventory, missingStages);
+    }
     
     @Nullable
     public Restriction getEquipmentRestriction (PlayerEntity player, IStageData stageData, ItemStack stack) {
         
         return this.getRestriction(player, stageData, stack, this.preventEquipment);
+    }
+
+    @Nullable
+    public Restriction getEquipmentRestriction (PlayerEntity player, IStageData stageData, ItemStack stack, Set<String> missingStages) {
+
+        return this.getRestriction(player, stageData, stack, this.preventEquipment, missingStages);
+    }
+
+    public Set<String> getMissingInventoryStages (PlayerEntity player, IStageData stageData) {
+
+        return this.getMissingStages(player, stageData, this.preventInventory);
+    }
+
+    public Set<String> getMissingEquipmentStages (PlayerEntity player, IStageData stageData) {
+
+        return this.getMissingStages(player, stageData, this.preventEquipment);
+    }
+
+    private Set<String> getMissingStages (PlayerEntity player, IStageData stageData, Multimap<String, Restriction> restrictionPool) {
+
+        this.buildCaches();
+
+        final Set<String> missingStages = new HashSet<>();
+
+        for (final String stageName : restrictionPool.keySet()) {
+
+            if (!GameStageHelper.hasStage(player, stageData, stageName)) {
+
+                missingStages.add(stageName);
+            }
+        }
+
+        return missingStages;
     }
     
     @Nullable
@@ -104,6 +146,28 @@ public class RestrictionManager extends ReloadListener<Void> {
         
         return null;
     }
+
+    @Nullable
+    private Restriction getRestriction (PlayerEntity player, IStageData stageData, ItemStack stack, Multimap<String, Restriction> restrictionPool, Set<String> missingStages) {
+
+        if (!stack.isEmpty() && !missingStages.isEmpty()) {
+
+            this.buildCaches();
+
+            for (final String stageName : missingStages) {
+
+                for (final Restriction restriction : restrictionPool.get(stageName)) {
+
+                    if (restriction.isRestricted(stack) && !restriction.meetsRequirements(player, stageData)) {
+
+                        return restriction;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
     
     /**
      * Registers a restriction with the manager. This will map the restriction using each of
@@ -113,6 +177,9 @@ public class RestrictionManager extends ReloadListener<Void> {
      */
     public void addRestriction (Restriction restriction) {
         
+        this.hasBuiltCaches = false;
+        this.preventInventory.clear();
+        this.preventEquipment.clear();
         restriction.getStages().forEach(stage -> this.restrictions.put(stage, restriction));
     }
     
@@ -129,5 +196,6 @@ public class RestrictionManager extends ReloadListener<Void> {
         this.hasBuiltCaches = false;
         this.restrictions.clear();
         this.preventInventory.clear();
+        this.preventEquipment.clear();
     }
 }
