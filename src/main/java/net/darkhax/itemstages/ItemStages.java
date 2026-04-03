@@ -224,8 +224,10 @@ public class ItemStages {
                     final ITextComponent sep = new StringTextComponent(", ").withStyle(TextFormatting.GRAY);
                     
                     for (final String stage : restriction.getStages()) {
-                        
-                        stages.add(new StringTextComponent(stage).withStyle(data.hasStage(stage) ? TextFormatting.GREEN : TextFormatting.RED));
+
+                        final String stageName = stage != null ? stage : "<null>";
+                        final boolean hasStage = stage != null && data != null && data.hasStage(stage);
+                        stages.add(new StringTextComponent(stageName).withStyle(hasStage ? TextFormatting.GREEN : TextFormatting.RED));
                     }
                     
                     final ITextComponent desc = new TranslationTextComponent("tooltip.itemstages.item.description", TextUtils.join(sep, stages)).withStyle(TextFormatting.GRAY);
